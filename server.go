@@ -58,7 +58,7 @@ func getNextRequest(url string) (Request, error) {
 		return *req, errPrackIsDown
 	}
 
-	if res.StatusCode != 200 {
+	if res.StatusCode != http.StatusOK {
 		return *req, errNoRequestsPending
 	}
 
