@@ -4,6 +4,7 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"errors"
+	"io"
 	"io/ioutil"
 	"net/http"
 	"strings"
@@ -37,17 +38,17 @@ func main() {
 			continue
 		}
 
-		response := buildResponse(
-			req.Identifier,
-			200,
-			map[string]string{
+		res := &response{
+			Identifier: req.Identifier,
+			Code:       200,
+			Headers: map[string]string{
 				"Content-Type": "text/html",
 				"Connection":   "close",
 			},
-			"Hello, "+req.Identifier+"!",
-		)
+			Body: "Hello, " + req.Identifier + "!",
+		}
 
-		http.Post(apiEndpoint, "application/json", strings.NewReader(response))
+		http.Post(apiEndpoint, "application/json", buildResponseJSON(res))
 	}
 }
 
@@ -69,13 +70,9 @@ func getNextRequest() (request, error) {
 	return *req, nil
 }
 
-func buildResponse(identifier string, code int, headers map[string]string, body string) string {
-	res := &response{}
-	res.Identifier = identifier
-	res.Code = code
-	res.Headers = headers
-	res.Body = base64.StdEncoding.EncodeToString([]byte(body))
-
+func buildResponseJSON(res *response) io.Reader {
+	encodedBody := base64.StdEncoding.EncodeToString([]byte(res.Body))
+	res.Body = encodedBody
 	marshalledResponse, _ := json.Marshal(res)
-	return string(marshalledResponse)
+	return strings.NewReader(string(marshalledResponse))
 }
