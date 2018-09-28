@@ -15,9 +15,10 @@ import (
 
 const apiEndpoint = "/api/v1/request"
 
-var errPrackIsDown = errors.New("Prack server seems to be down")
-
-var errNoRequestsPending = errors.New("There are no requests pending")
+var (
+	errNoRequestsPending = errors.New("There are no requests pending")
+	errPrackIsDown       = errors.New("Prack server seems to be down")
+)
 
 func main() {
 	if len(os.Args) != 2 {
