@@ -18,18 +18,6 @@ const apiEndpoint = "/api/v1/request"
 var errPrackIsDown = errors.New("Prack server seems to be down")
 var errNoRequestsPending = errors.New("There are no requests pending")
 
-type request struct {
-	Identifier  string            `json:"identifier"`
-	Environment map[string]string `json:"environment"`
-}
-
-type response struct {
-	Identifier string            `json:"identifier"`
-	Code       int               `json:"code"`
-	Headers    map[string]string `json:"headers"`
-	Body       string            `json:"body"`
-}
-
 func main() {
 	if len(os.Args) != 2 {
 		fmt.Println("Usage: " + os.Args[0] + " [host]:[port]")
@@ -39,31 +27,27 @@ func main() {
 	url := "http://" + os.Args[1] + apiEndpoint
 
 	for {
-		req, err := getNextRequest(url)
-		if err != nil {
-			if err == errPrackIsDown {
-				time.Sleep(5 * time.Second)
-			}
-			continue
-		}
-
-		res := &response{
-			Identifier: req.Identifier,
-			Code:       200,
-			Headers: map[string]string{
-				"Content-Type": "text/html",
-				"Connection":   "close",
-			},
-			Body: "Hello, " + req.Identifier + "!",
-		}
-
-		http.Post(url, "application/json", buildResponseJSON(res))
+		loop(url)
 	}
 }
 
-func getNextRequest(url string) (request, error) {
+func loop(url string) {
+	req, err := getNextRequest(url)
+	if err != nil {
+		if err == errPrackIsDown {
+			time.Sleep(5 * time.Second)
+		}
+		return
+	}
+
+	res := BuildDefaultResponse(req)
+	res.Body = "Hello, " + req.Identifier + "!"
+	http.Post(url, "application/json", buildResponseJSON(res))
+}
+
+func getNextRequest(url string) (Request, error) {
 	res, err := http.Get(url)
-	req := &request{}
+	req := &Request{}
 
 	if err != nil {
 		return *req, errPrackIsDown
@@ -79,7 +63,7 @@ func getNextRequest(url string) (request, error) {
 	return *req, nil
 }
 
-func buildResponseJSON(res *response) io.Reader {
+func buildResponseJSON(res Response) io.Reader {
 	encodedBody := base64.StdEncoding.EncodeToString([]byte(res.Body))
 	res.Body = encodedBody
 	marshalledResponse, _ := json.Marshal(res)
