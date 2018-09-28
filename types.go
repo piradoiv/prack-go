@@ -22,7 +22,7 @@ type Response struct {
 // with a 200 Status Code, text/html Content Type and
 // Close Connection
 func BuildDefaultResponse(req Request) Response {
-	res := &Response{
+	return Response{
 		Identifier: req.Identifier,
 		Code:       http.StatusOK,
 		Headers: map[string]string{
@@ -30,6 +30,4 @@ func BuildDefaultResponse(req Request) Response {
 			"Connection":   "close",
 		},
 	}
-
-	return *res
 }
