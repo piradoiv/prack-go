@@ -25,7 +25,7 @@ func main() {
 		fmt.Println("Example: " + os.Args[0] + " localhost:4242")
 		return
 	}
-	url := "http://" + os.Args[1] + apiEndpoint
+	url := fmt.Sprintf("http://%s%s", os.Args[1], apiEndpoint)
 
 	for {
 		loop(url)
