@@ -4,11 +4,11 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"errors"
+	"flag"
 	"fmt"
 	"io"
 	"io/ioutil"
 	"net/http"
-	"os"
 	"strings"
 	"time"
 )
@@ -20,14 +20,30 @@ var (
 	errPrackIsDown       = errors.New("Prack server seems to be down")
 )
 
-func main() {
-	if len(os.Args) != 2 {
-		fmt.Println("Usage: " + os.Args[0] + " [host]:[port]")
-		fmt.Println("Example: " + os.Args[0] + " localhost:4242")
-		return
-	}
-	url := fmt.Sprintf("http://%s%s", os.Args[1], apiEndpoint)
+type request struct {
+	Identifier  string            `json:"identifier"`
+	Environment map[string]string `json:"environment"`
+}
 
+type response struct {
+	Identifier string            `json:"identifier"`
+	Code       int               `json:"code"`
+	Headers    map[string]string `json:"headers"`
+	Body       string            `json:"body"`
+}
+
+var (
+	host string
+	port int
+)
+
+func init() {
+	flag.StringVar(&host, "h", "localhost", "host")
+	flag.IntVar(&port, "p", 4242, "port")
+}
+
+func main() {
+	url := fmt.Sprintf("http://%s:%d%s", host, port, apiEndpoint)
 	for {
 		loop(url)
 	}
