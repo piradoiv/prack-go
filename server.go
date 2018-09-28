@@ -4,14 +4,16 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io"
 	"io/ioutil"
 	"net/http"
+	"os"
 	"strings"
 	"time"
 )
 
-const apiEndpoint = "http://localhost:4242/api/v1/request"
+const apiEndpoint = "/api/v1/request"
 
 var errPrackIsDown = errors.New("Prack server seems to be down")
 var errNoRequestsPending = errors.New("There are no requests pending")
@@ -29,8 +31,15 @@ type response struct {
 }
 
 func main() {
+	if len(os.Args) != 2 {
+		fmt.Println("Usage: " + os.Args[0] + " [host]:[port]")
+		fmt.Println("Example: " + os.Args[0] + " localhost:4242")
+		return
+	}
+	url := "http://" + os.Args[1] + apiEndpoint
+
 	for {
-		req, err := getNextRequest()
+		req, err := getNextRequest(url)
 		if err != nil {
 			if err == errPrackIsDown {
 				time.Sleep(5 * time.Second)
@@ -48,12 +57,12 @@ func main() {
 			Body: "Hello, " + req.Identifier + "!",
 		}
 
-		http.Post(apiEndpoint, "application/json", buildResponseJSON(res))
+		http.Post(url, "application/json", buildResponseJSON(res))
 	}
 }
 
-func getNextRequest() (request, error) {
-	res, err := http.Get(apiEndpoint)
+func getNextRequest(url string) (request, error) {
+	res, err := http.Get(url)
 	req := &request{}
 
 	if err != nil {
