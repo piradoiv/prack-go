@@ -3,7 +3,7 @@ package main
 import (
 	"encoding/base64"
 	"encoding/json"
-	"fmt"
+	"errors"
 	"io/ioutil"
 	"net/http"
 	"strings"
@@ -11,6 +11,9 @@ import (
 )
 
 const apiEndpoint = "http://localhost:4242/api/v1/request"
+
+var errPrackIsDown = errors.New("Prack server seems to be down")
+var errNoRequestsPending = errors.New("There are no requests pending")
 
 type request struct {
 	Identifier  string            `json:"identifier"`
@@ -26,33 +29,53 @@ type response struct {
 
 func main() {
 	for {
-		res, err := http.Get(apiEndpoint)
+		req, err := getNextRequest()
 		if err != nil {
-			fmt.Println("Prack server seems to be down, sleeping")
-			time.Sleep(5 * time.Second)
+			if err == errPrackIsDown {
+				time.Sleep(5 * time.Second)
+			}
 			continue
 		}
 
-		if res.StatusCode != 200 {
-			continue
-		}
+		response := buildResponse(
+			req.Identifier,
+			200,
+			map[string]string{
+				"Content-Type": "text/html",
+				"Connection":   "close",
+			},
+			"Hello, "+req.Identifier+"!",
+		)
 
-		contents, _ := ioutil.ReadAll(res.Body)
-		res.Body.Close()
-
-		req := &request{}
-		json.Unmarshal(contents, &req)
-
-		response := &response{}
-		response.Identifier = req.Identifier
-		response.Code = 200
-		response.Headers = map[string]string{
-			"Content-Type": "text/html",
-			"Connection":   "close",
-		}
-		response.Body = base64.StdEncoding.EncodeToString([]byte("Holi " + req.Identifier + "!\n"))
-
-		marshalledResponse, _ := json.Marshal(response)
-		http.Post(apiEndpoint, "application/json", strings.NewReader(string(marshalledResponse)))
+		http.Post(apiEndpoint, "application/json", strings.NewReader(response))
 	}
+}
+
+func getNextRequest() (request, error) {
+	res, err := http.Get(apiEndpoint)
+	req := &request{}
+
+	if err != nil {
+		return *req, errPrackIsDown
+	}
+
+	if res.StatusCode != 200 {
+		return *req, errNoRequestsPending
+	}
+
+	contents, _ := ioutil.ReadAll(res.Body)
+	res.Body.Close()
+	json.Unmarshal(contents, &req)
+	return *req, nil
+}
+
+func buildResponse(identifier string, code int, headers map[string]string, body string) string {
+	res := &response{}
+	res.Identifier = identifier
+	res.Code = code
+	res.Headers = headers
+	res.Body = base64.StdEncoding.EncodeToString([]byte(body))
+
+	marshalledResponse, _ := json.Marshal(res)
+	return string(marshalledResponse)
 }
