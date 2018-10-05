@@ -20,18 +20,6 @@ var (
 	errPrackIsDown       = errors.New("Prack server seems to be down")
 )
 
-type request struct {
-	Identifier  string            `json:"identifier"`
-	Environment map[string]string `json:"environment"`
-}
-
-type response struct {
-	Identifier string            `json:"identifier"`
-	Code       int               `json:"code"`
-	Headers    map[string]string `json:"headers"`
-	Body       string            `json:"body"`
-}
-
 var (
 	host string
 	port int
