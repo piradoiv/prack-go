@@ -4,28 +4,34 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"errors"
+	"flag"
 	"fmt"
 	"io"
 	"io/ioutil"
 	"net/http"
-	"os"
 	"strings"
 	"time"
 )
 
 const apiEndpoint = "/api/v1/request"
 
-var errPrackIsDown = errors.New("Prack server seems to be down")
-var errNoRequestsPending = errors.New("There are no requests pending")
+var (
+	errNoRequestsPending = errors.New("There are no requests pending")
+	errPrackIsDown       = errors.New("Prack server seems to be down")
+)
+
+var (
+	host string
+	port int
+)
+
+func init() {
+	flag.StringVar(&host, "h", "localhost", "host")
+	flag.IntVar(&port, "p", 4242, "port")
+}
 
 func main() {
-	if len(os.Args) != 2 {
-		fmt.Println("Usage: " + os.Args[0] + " [host]:[port]")
-		fmt.Println("Example: " + os.Args[0] + " localhost:4242")
-		return
-	}
-	url := "http://" + os.Args[1] + apiEndpoint
-
+	url := fmt.Sprintf("http://%s:%d%s", host, port, apiEndpoint)
 	for {
 		loop(url)
 	}
@@ -46,14 +52,13 @@ func loop(url string) {
 }
 
 func getNextRequest(url string) (Request, error) {
-	res, err := http.Get(url)
 	req := &Request{}
-
+	res, err := http.Get(url)
 	if err != nil {
 		return *req, errPrackIsDown
 	}
 
-	if res.StatusCode != 200 {
+	if res.StatusCode != http.StatusOK {
 		return *req, errNoRequestsPending
 	}
 

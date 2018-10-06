@@ -1,5 +1,9 @@
 package main
 
+import (
+	"net/http"
+)
+
 // Request is what we get from Prack Server
 type Request struct {
 	Identifier  string            `json:"identifier"`
@@ -18,14 +22,12 @@ type Response struct {
 // with a 200 Status Code, text/html Content Type and
 // Close Connection
 func BuildDefaultResponse(req Request) Response {
-	res := &Response{
+	return Response{
 		Identifier: req.Identifier,
-		Code:       200,
+		Code:       http.StatusOK,
 		Headers: map[string]string{
 			"Content-Type": "text/html",
 			"Connection":   "close",
 		},
 	}
-
-	return *res
 }
